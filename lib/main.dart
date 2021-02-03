@@ -1,10 +1,18 @@
+import 'dart:convert';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -50,17 +58,31 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  String msgTitle = "Waiting for notification message";
+  String notificationSource = "";
+  String rawResponse = "";
+  FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  void initState() {
+    super.initState();
+
+    _firebaseMessaging.configure(
+      onMessage: (message) async {
+        setState(() {
+          msgTitle = message["notification"]["title"];
+          notificationSource = "onMessage Notis";
+          rawResponse = json.encode(message);
+        });
+      },
+      onResume: (message) async {
+        setState(() {
+          msgTitle = message["data"]["title"];
+          notificationSource = "onResume Notis";
+          rawResponse = json.encode(message);
+        });
+      },
+    );
   }
 
   @override
@@ -98,20 +120,34 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'You have pushed the button this many times:',
+              '$notificationSource',
+              style: Theme.of(context).textTheme.headline6,
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                '$msgTitle',
+                style: Theme.of(context).textTheme.headline5,
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.5),
+                  border: Border.all(
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ),
+                child: Text(
+                  '$rawResponse',
+                ),
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
